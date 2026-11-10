@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Batman Secret Dossier - Happy Birthday Cookie!</title>
+  <style>
+    :root {
+      --bat-black: #000000;
+      --bat-card: rgba(10, 10, 10, 0.92);
+      --bat-border: #1F1F1F;
+      --bat-pink: #FF69B4;
+      --bat-pink-light: #FFB6C1;
+      --bat-text: #FFFFFF;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bat-black);
+      color: var(--bat-text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      position: relative;
+      padding: 16px;
+    }
+
+    /* MATRIX BACKGROUND CANVAS */
+    #matrixCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .app-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    /* BATMAN STANDING OUTSIDE ON TOP OF THE CARD */
+    .batman-outside-wrapper {
+      position: relative;
+      width: 170px;
+      height: 130px;
+      margin: 0 auto -25px auto;
+      z-index: 15;
+      transition: transform 0.4s ease;
+    }
+
+    .batman-svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 10px 15px rgba(255,105,180,0.4));
+    }
+
+    /* CARD DESIGN */
+    .bat-card {
+      background: var(--bat-card);
+      border: 2px solid var(--bat-pink);
+      border-radius: 20px;
+      padding: 36px 20px 24px 20px;
+      box-shadow: 0 0 35px rgba(255, 105, 180, 0.35);
+      backdrop-filter: blur(10px);
+      text-align: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    .hint-badge {
+      display: inline-block;
+      background: rgba(255, 105, 180, 0.15);
+      color: var(--bat-pink-light);
+      border: 1px dashed var(--bat-pink);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+    }
+
+    .banner-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--bat-pink);
+      margin-bottom: 16px;
+      text-shadow: 0 0 10px rgba(255, 105, 180, 0.5);
+    }
+
+    .code-input {
+      width: 100%;
+      background: #000000;
+      border: 2px solid var(--bat-pink);
+      color: var(--bat-pink);
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 4px;
+      padding: 12px;
+      border-radius: 12px;
+      outline: none;
+      margin-bottom: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .code-input:focus {
+      border-color: var(--bat-pink-light);
+      box-shadow: 0 0 20px rgba(255, 105, 180, 0.6);
+    }
+
+    .bat-btn {
+      width: 100%;
+      background: var(--bat-pink);
+      color: #000000;
+      border: none;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .bat-btn:hover {
+      background: var(--bat-pink-light);
+      transform: translateY(-2px);
+    }
+
+    .error-msg {
+      color: #FF4D4D;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: 10px;
+      min-height: 20px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .error-msg.visible {
+      opacity: 1;
+    }
+
+    /* TRANSITION OVERLAY FOR BATMOBILE DRIVE-OFF */
+    .chase-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.4s ease;
+    }
+
+    .chase-screen.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .batmobile-chaser {
+      position: absolute;
+      bottom: 30%;
+      left: -260px;
+      width: 220px;
+      height: 90px;
+      z-index: 101;
+      filter: drop-shadow(0 0 15px rgba(255, 105, 180, 0.8));
+    }
+
+    .chase-active .batmobile-chaser {
+      animation: driveAcross 2.0s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes driveAcross {
+      0% { left: -250px; }
+      50% { left: 40vw; }
+      100% { left: 110vw; }
+    }
+
+    .picture-reveal-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .picture-reveal-container.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .speech-bubble-text {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--bat-pink);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 0 0 20px rgba(255, 105, 180, 0.8);
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    /* HOME PAGE SECTION */
+    .home-page {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    .home-page.active {
+      display: block;
+      opacity: 1;
+    }
+
+    .letter-container {
+      display: none;
+      margin-top: 20px;
+      text-align: left;
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid var(--bat-pink);
+      border-radius: 16px;
+      padding: 20px;
+      animation: fadeIn 0.6s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .letter-text {
+      color: #E2E8F0;
+      line-height: 1.6;
+      font-size: 0.95rem;
+      margin-bottom: 16px;
+    }
+
+    .letter-text p {
+      margin-bottom: 14px;
+    }
+
+    .bat-audio-player {
+      background: var(--bat-card);
+      border: 1px solid var(--bat-pink);
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 16px;
+    }
+
+    .audio-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--bat-pink);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    audio {
+      width: 100%;
+      height: 34px;
+      border-radius: 6px;
+      filter: invert(0.9) hue-rotate(280deg);
+    }
+
+    .cake-btn {
+      background: transparent;
+      border: 2px solid var(--bat-pink);
+      color: var(--bat-pink);
+      margin-top: 14px;
+    }
+
+    .cake-btn:hover {
+      background: rgba(255, 105, 180, 0.2);
+      color: #FFFFFF;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MATRIX RAIN BACKGROUND CANVAS -->
+  <canvas id="matrixCanvas"></canvas>
+
+  <!-- BACKGROUND MUSIC (PLAYBACK STARTS ON UNLOCK) -->
+  <audio id="bdayAudio" loop>
+    <source src="for_you.mp3" type="audio/mpeg">
+    <source src="For You.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- LOGIN SECTION -->
+  <div class="app-container" id="loginSection">
+    
+    <!-- BATMAN STANDING OUTSIDE ON TOP OF LOGIN CARD -->
+    <div class="batman-outside-wrapper">
+      <svg class="batman-svg" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60 65 L75 10 L95 45 L105 45 L125 10 L140 65 Q100 80 60 65 Z" fill="#111111" />
+        <polygon points="78,48 94,54 82,60" fill="#FF69B4" />
+        <polygon points="122,48 106,54 118,60" fill="#FF69B4" />
+        <path d="M20 140 Q40 70 65 65 Q100 85 135 65 Q160 70 180 140 Z" fill="#1C1C1C" />
+        <ellipse cx="100" cy="110" rx="20" ry="10" fill="#000000" />
+        <path d="M100 104 C96 104 93 107 88 106 C85 110 88 116 100 117 C112 116 115 110 112 106 C107 107 104 104 100 104 Z" fill="#FF69B4" />
+        <ellipse cx="50" cy="138" rx="12" ry="7" fill="#FF69B4" />
+        <ellipse cx="150" cy="138" rx="12" ry="7" fill="#FF69B4" />
+      </svg>
+    </div>
+
+    <div class="bat-card" id="loginCard">
+      <div class="hint-badge">psst... code is 2209</div>
+      <div class="banner-title">enter our secret code</div>
+
+      <input type="password" id="passcodeInput" class="code-input" maxlength="4" placeholder="••••" autofocus>
+      <button class="bat-btn" onclick="verifyCode()">UNKNIGHT ACCESS</button>
+      <div id="errorText" class="error-msg">ACCESS DENIED: INCORRECT PASSCODE</div>
+    </div>
+  </div>
+
+  <!-- BATMOBILE DRIVE-OFF TRANSITION OVERLAY -->
+  <div class="chase-screen" id="chaseScreen">
+    
+    <div class="batmobile-chaser">
+      <svg viewBox="0 0 240 100" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="200,60 240,40 240,80" fill="url(#headlightGlow)" opacity="0.6"/>
+        <path d="M10 65 Q30 25 80 25 L150 25 Q190 25 210 65 L200 80 L20 80 Z" fill="#0D0D0D" stroke="#FF69B4" stroke-width="2"/>
+        <path d="M80 25 L110 10 L140 25 Z" fill="#FF69B4" opacity="0.9" />
+        <circle cx="50" cy="78" r="16" fill="#000000" stroke="#FF69B4" stroke-width="4" />
+        <circle cx="170" cy="78" r="16" fill="#000000" stroke="#FF69B4" stroke-width="4" />
+        <path d="M0 65 Q-20 55 -40 65 Q-20 75 0 65 Z" fill="#FF69B4" />
+        <defs>
+          <linearGradient id="headlightGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#FF69B4" stop-opacity="0.8"/>
+            <stop offset="100%" stop-color="#FF69B4" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="picture-reveal-container" id="pictureReveal">
+      <div class="speech-bubble-text">
+        HAPPY BIRTHDAY<br>cookie ! 🎂✨
+      </div>
+    </div>
+
+  </div>
+
+  <!-- HOME PAGE SECTION -->
+  <div class="app-container home-page" id="homeSection">
+    
+    <!-- BATMAN VISUAL STANDING / SLEEPING ON HOME CARD -->
+    <div class="batman-outside-wrapper">
+      <svg id="normalBatmanSvg" class="batman-svg" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60 65 L75 10 L95 45 L105 45 L125 10 L140 65 Q100 80 60 65 Z" fill="#111111" />
+        <polygon points="78,48 94,54 82,60" fill="#FF69B4" />
+        <polygon points="122,48 106,54 118,60" fill="#FF69B4" />
+        <path d="M20 140 Q40 70 65 65 Q100 85 135 65 Q160 70 180 140 Z" fill="#1C1C1C" />
+        <ellipse cx="100" cy="110" rx="20" ry="10" fill="#000000" />
+        <path d="M100 104 C96 104 93 107 88 106 C85 110 88 116 100 117 C112 116 115 110 112 106 C107 107 104 104 100 104 Z" fill="#FF69B4" />
+        <ellipse cx="50" cy="138" rx="12" ry="7" fill="#FF69B4" />
+        <ellipse cx="150" cy="138" rx="12" ry="7" fill="#FF69B4" />
+      </svg>
+
+      <!-- BLOATED SLEEPING BATMAN -->
+      <svg id="bloatedBatmanSvg" class="batman-svg" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <ellipse cx="100" cy="95" rx="60" ry="38" fill="#111111" />
+        <ellipse cx="100" cy="95" rx="38" ry="26" fill="#FF69B4" />
+        <circle cx="40" cy="90" r="18" fill="#111111" />
+        <path d="M32 88 L44 88" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+        <text x="15" y="65" fill="#FF69B4" font-weight="bold" font-size="16">Zzz...</text>
+      </svg>
+    </div>
+
+    <div class="bat-card">
+      
+      <div class="banner-title">letter for you</div>
+      
+      <button class="bat-btn" id="openLetterBtn" onclick="toggleLetter()">PRESS TO OPEN</button>
+      <button class="bat-btn cake-btn" id="cakeBtn" onclick="feedBatmanCake()">FEED BATMAN CAKE 🍰</button>
+
+      <!-- LETTER CONTENT -->
+      <div class="letter-container" id="letterContainer">
+        <div class="letter-text">
+          <p>hii babyy, i am not a being of many words so here is a few. thank you for YOU . and by YOU i mean an incredible person, kind, full of strength, positive, pretty, good listener-ish and you dont judge me . i am so grateful to have you in my life btw. ❤️</p>
+          <p>i didnt know what to get you coz you are already blessed with the most so i made this little website i hope it brings you happiness. ✨</p>
+          <p>always remember that ill always be here for you if you ever need a shoulder to lean on, titties to suck on, and thighs to sleep on . i love truly. 💖</p>
+          <p> IM NOT A COUGAR ANYMOREEEEE!! 😭</p>
+        </div>
+
+        <!-- AUDIO PLAYER CONTROLS -->
+        <div class="bat-audio-player">
+          <div class="audio-title">
+            <span>🔊</span> Playing: For You - Kali Uchis
+          </div>
+          <audio controls loop id="visibleAudio">
+            <source src="for_you.mp3" type="audio/mpeg">
+            <source src="For You.mp3" type="audio/mpeg">
+          </audio>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    /* MATRIX ALGORITHM ANIMATION WITH WORDS & HEARTS */
+    const canvas = document.getElementById('matrixCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const words = ["1", "0", "♥", "cookie", "capitan", "i love you", "happy birthday", "♥"];
+    const fontSize = 16;
+    const columns = Math.floor(window.innerWidth / 20);
+    const drops = Array(columns).fill(1);
+
+    function drawMatrix() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = words[Math.floor(Math.random() * words.length)];
+        
+        if (text === "♥" || text === "cookie" || text === "capitan" || text === "i love you" || text === "happy birthday") {
+          ctx.fillStyle = "#FF69B4";
+          ctx.font = "bold 18px monospace";
+        } else {
+          ctx.fillStyle = "#FFB6C1";
+          ctx.font = "14px monospace";
+        }
+
+        ctx.fillText(text, i * 24, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+    setInterval(drawMatrix, 45);
+
+    /* VERIFY CODE, PLAY MUSIC AUTOMATICALLY & DRIVE OFF */
+    window.verifyCode = function() {
+      const input = document.getElementById('passcodeInput').value.trim();
+      const errorText = document.getElementById('errorText');
+      const audio = document.getElementById('bdayAudio');
+      const visibleAudio = document.getElementById('visibleAudio');
+
+      if (input === '2209') {
+        errorText.classList.remove('visible');
+
+        // Play music immediately on user unlock action
+        audio.play().catch(() => {});
+        visibleAudio.play().catch(() => {});
+
+        document.getElementById('loginSection').style.display = 'none';
+        const chaseScreen = document.getElementById('chaseScreen');
+        chaseScreen.classList.add('active', 'chase-active');
+
+        setTimeout(() => {
+          document.getElementById('pictureReveal').classList.add('visible');
+        }, 1200);
+
+        setTimeout(() => {
+          chaseScreen.classList.remove('active');
+          const homeSection = document.getElementById('homeSection');
+          homeSection.classList.add('active');
+        }, 3000);
+
+      } else {
+        errorText.classList.add('visible');
+        const card = document.getElementById('loginCard');
+        card.style.transform = 'translateX(-10px)';
+        setTimeout(() => card.style.transform = 'translateX(10px)', 100);
+        setTimeout(() => card.style.transform = 'translateX(-10px)', 200);
+        setTimeout(() => card.style.transform = 'translateX(0)', 300);
+      }
+    };
+
+    document.getElementById('passcodeInput').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        window.verifyCode();
+      }
+    });
+
+    window.toggleLetter = function() {
+      const letter = document.getElementById('letterContainer');
+      const btn = document.getElementById('openLetterBtn');
+
+      if (letter.style.display === 'block') {
+        letter.style.display = 'none';
+        btn.innerText = 'PRESS TO OPEN';
+      } else {
+        letter.style.display = 'block';
+        btn.innerText = 'CLOSE LETTER';
+      }
+    };
+
+    let isBloated = false;
+    window.feedBatmanCake = function() {
+      const normalSvg = document.getElementById('normalBatmanSvg');
+      const bloatedSvg = document.getElementById('bloatedBatmanSvg');
+      const cakeBtn = document.getElementById('cakeBtn');
+
+      if (!isBloated) {
+        normalSvg.style.display = 'none';
+        bloatedSvg.style.display = 'block';
+        cakeBtn.innerText = 'WAKE BATMAN UP 💤';
+        isBloated = true;
+      } else {
+        bloatedSvg.style.display = 'none';
+        normalSvg.style.display = 'block';
+        cakeBtn.innerText = 'FEED BATMAN CAKE 🍰';
+        isBloated = false;
+      }
+    };
+  </script>
+</body>
+</html>
